@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  bingo-app1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:13842"
+    depends_on:
+      - postgres-db
+    networks:
+      - bingo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:13842"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  bingo-app2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:13842"
+    depends_on:
+      - postgres-db
+    networks:
+      - bingo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:13842"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - bingo-network
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./src/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - bingo-app1
+      - bingo-app2
+    networks:
+      - bingo-network
+
+volumes:
+  postgres_data:
+
+networks:
+  bingo-network:
+    driver: bridge
